@@ -11,7 +11,7 @@
 #elif defined _M_IX86
 #pragma comment(lib, "detours.X86/detours.lib")
 #endif
-
+//
 //ANTICHEAT
 uintptr_t addressSHValue     = 0;
 uintptr_t addressGetProcId   = 0;
