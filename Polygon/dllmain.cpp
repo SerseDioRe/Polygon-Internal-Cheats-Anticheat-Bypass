@@ -3,6 +3,7 @@
 #include "functions.h"
 #include "Anticheat.h"
 #include "Weapon.h"
+#include "Signatures.h"
 
 //detours
 #include "detours.h"
@@ -12,20 +13,30 @@
 #pragma comment(lib, "detours.X86/detours.lib")
 #endif
 //
+
+#define UNLIMITED_AMMO_KEY_PRESSED if (GetAsyncKeyState(VK_F1) & 1)
+#define NO_RECOIL_KEY_PRESSED if (GetAsyncKeyState(VK_F2) & 1)
+#define RAPID_FIRE_KEY_PRESSED if (GetAsyncKeyState(VK_F3) & 1)
+#define UNLIMITED_STAMINA_KEY_PRESSED if (GetAsyncKeyState(VK_F4) & 1)
+
 //ANTICHEAT
 uintptr_t addressSHValue     = 0;
 uintptr_t addressGetProcId   = 0;
 uintptr_t addressFindWindowA = 0;
 //HACK
 uintptr_t addressGetAItem_Weapon_General = 0;
-uintptr_t addressAItem_Weapon_General = 0;
+uintptr_t addressAItem_Weapon_General    = 0;
+uintptr_t addressUHealthStatsComponent   = 0;
 
-Anticheat* anticheat = nullptr;
-AItem_Weapon_General* aItem_Weapon_General = nullptr;
+Anticheat* anticheat                         = nullptr;
+Signatures* signatures                       = nullptr;
+AItem_Weapon_General* aItem_Weapon_General   = nullptr;
+UHealthStatsComponent* uHealthStatsComponent = nullptr;
 
 bool bRecoil;
 bool unlimitedAmmo;
 bool unlimitedStamina;
+bool bRapidFire;
 
 typedef __int64(__fastcall* tGetAItem_Weapon_General)(uintptr_t AItem_Weapon_GeneralObj);
 tGetAItem_Weapon_General GetAItem_Weapon_GeneralObj = nullptr;
@@ -36,57 +47,72 @@ __int64 __fastcall HookGetAItem_Weapon_GeneralObj(uintptr_t AItem_Weapon_General
     return GetAItem_Weapon_GeneralObj(AItem_Weapon_GeneralObj);
 }
 
+typedef void(__fastcall* tGetUHealthStatsComponentObj)(uintptr_t UHealthStatsComponentObj);
+tGetUHealthStatsComponentObj GetUHealthStatsComponentObj = nullptr;
+
+void __fastcall HookGetUHealthStatsComponentObj(uintptr_t UHealthStatsComponentObj)
+{
+    addressUHealthStatsComponent = UHealthStatsComponentObj;
+    GetUHealthStatsComponentObj(UHealthStatsComponentObj);
+}
+
 DWORD WINAPI PolygonHack(HMODULE hModule)
 {
-    const char* gameName = "POLYGON-Win64-Shipping.exe";
+    signatures = new Signatures("POLYGON-Win64-Shipping.exe");
 
-    uintptr_t moduleBase = (uintptr_t)Functions::_GetModuleHandleIn((_TCHAR*)(gameName));
-
-    addressSHValue       = (uintptr_t)(Functions::ScanModIn((char*)"\xFF\x15\x00\x00\x00\x00\x85\xC0\x0F\x85\x00\x00\x00\x00\xFF\x15\x00\x00\x00\x00\x66\x44\x89\x7D\x70", 
-        (char*)"xx????xxxx????xx????xxxxx", 
-        gameName));
-    addressGetProcId     = (uintptr_t)(Functions::ScanModIn((char*)"\x40\x56\x41\x56\x48\x81\xEC\x88\x02\x00\x00\x48\x8B\x00\x00\x00\x00\x00\x48\x33\xC4",
-        (char*)"xxxxxxxxxxxxx?????xxx",
-        gameName));
-    addressFindWindowA   = (uintptr_t)(Functions::ScanModIn((char*)"\x40\x53\x48\x83\xEC\x20\x48\x8B\xD9\x48\x83\xC1\x30\x48\x83\x39\x00\x74\x09\xE8\x00\x00\x00\x00\x84\xC0\x75\x08",
-        (char*)"xxxxxxxxxxxxxxxxxxxx????xxxx",
-        gameName));
-
-    addressGetAItem_Weapon_General = (uintptr_t)(Functions::ScanModIn((char*)"\x48\x8B\xC4\x48\x89\x58\x10\x48\x89\x70\x18\x48\x89\x78\x20\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x68\xA1\x48\x81\xEC\xF0\x00\x00\x00\x0F\x29\x70\xC8\x0F\x29\x78\xB8\x48\x8B\x00\x00\x00\x00\x00\x48\x33\xC4\x48\x89\x45\x07\x48\x8B\xD9",
-        (char*)"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?????xxxxxxxxxx",
-        gameName));
-
-    if (addressSHValue == 0 || addressGetProcId == 0 || 
-        addressFindWindowA == 0 || addressGetAItem_Weapon_General == 0)
-    {
-        MessageBox(0, L"Signature seem broken, Game needs to be updated", L"ERROR", MB_ICONERROR);
+    std::vector<uintptr_t> Offsets{ signatures->GetOffsets() };
+    if (!signatures->checkIfIsValid())
         return NULL;
-    }
 
-    std::vector<uintptr_t> anticheatOffsets{ addressSHValue, addressGetProcId, addressFindWindowA };
+    std::vector<uintptr_t> anticheatOffsets{ Offsets[Anticheat::CreateProcessW], Offsets[Anticheat::GetProcessId], 
+        Offsets[Anticheat::FindWindowA] };
     anticheat = new Anticheat(anticheatOffsets);
 
     anticheat->DisableScue4x64();
     anticheat->DisableCEDetection();
 
     //STARTING HACK...
-    GetAItem_Weapon_GeneralObj = (tGetAItem_Weapon_General)(addressGetAItem_Weapon_General);//addressGetAItem_Weapon_General);
+    GetAItem_Weapon_GeneralObj  = (tGetAItem_Weapon_General)(Offsets[Signatures::AItem_Weapon_General]);
+    GetUHealthStatsComponentObj = (tGetUHealthStatsComponentObj)(Offsets[Signatures::UHealthStatsComponent]);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(LPVOID&)GetAItem_Weapon_GeneralObj, (PBYTE)HookGetAItem_Weapon_GeneralObj);
+    DetourAttach(&(LPVOID&)GetUHealthStatsComponentObj, (PBYTE)HookGetUHealthStatsComponentObj);
     DetourTransactionCommit();
 
 	while (true) 
 	{
-        // Hack...
         aItem_Weapon_General = (AItem_Weapon_General*)(addressAItem_Weapon_General);
+        uHealthStatsComponent = (UHealthStatsComponent*)(addressUHealthStatsComponent);
 
-        if (GetAsyncKeyState(VK_NUMPAD1) & 1) 
+        UNLIMITED_AMMO_KEY_PRESSED
+        {
+            if (aItem_Weapon_General)
+                unlimitedAmmo = !unlimitedAmmo;
+        }
+
+        NO_RECOIL_KEY_PRESSED
         {
             if(aItem_Weapon_General)
-            {
                 bRecoil = !bRecoil;
+        }
+
+        RAPID_FIRE_KEY_PRESSED
+            bRapidFire = !bRapidFire;
+
+        UNLIMITED_STAMINA_KEY_PRESSED
+        {
+            if (uHealthStatsComponent)
+                unlimitedStamina = !unlimitedStamina;
+
+            if (unlimitedStamina)
+            {
+                if (uHealthStatsComponent)
+                {
+                    anticheat->Nop((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8); 
+                    anticheat->Nop((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8); 
+                }
             }
         }
 
@@ -100,15 +126,6 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
                 aItem_Weapon_General->AccuracyHip = 0.0F;
                 aItem_Weapon_General->AccuracySight = 0.0F;
                 aItem_Weapon_General->CurrentSpread = 0.0F;
-                aItem_Weapon_General->TimeBetweenShots = 0.1F;
-            }
-        }
-
-        if(GetAsyncKeyState(VK_NUMPAD2) & 1)
-        {
-            if(aItem_Weapon_General)
-            {
-                unlimitedAmmo = !unlimitedAmmo;
             }
         }
 
@@ -121,10 +138,17 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
             }
         }
 
+        if(bRapidFire)
+        {
+            if(aItem_Weapon_General)
+                aItem_Weapon_General->TimeBetweenShots = 0.01F;
+        }
+
 		Sleep(30);
 	}
 
     delete anticheat;
+    delete signatures;
 
 	return 0;
 }

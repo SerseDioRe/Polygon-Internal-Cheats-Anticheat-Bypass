@@ -22,6 +22,9 @@
     <Filter Include="Hack\Anticheat">
       <UniqueIdentifier>{7fa17549-4552-461d-a582-983bafb03b56}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Hack\Signatures">
+      <UniqueIdentifier>{c858f833-45d0-45d5-9ad4-4fc522f9dd14}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -45,6 +48,9 @@
     <ClInclude Include="Anticheat.h">
       <Filter>Hack\Anticheat</Filter>
     </ClInclude>
+    <ClInclude Include="Signatures.h">
+      <Filter>Hack\Signatures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -55,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="Anticheat.cpp">
       <Filter>Hack\Anticheat</Filter>
+    </ClCompile>
+    <ClCompile Include="Signatures.cpp">
+      <Filter>Hack\Signatures</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

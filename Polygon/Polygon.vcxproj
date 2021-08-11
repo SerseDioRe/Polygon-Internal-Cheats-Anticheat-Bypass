@@ -158,12 +158,14 @@
     <ClInclude Include="functions.h" />
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Signatures.h" />
     <ClInclude Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Anticheat.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="functions.cpp" />
+    <ClCompile Include="Signatures.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
