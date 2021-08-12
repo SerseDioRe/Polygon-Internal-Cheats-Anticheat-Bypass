@@ -25,6 +25,9 @@
     <Filter Include="Hack\Signatures">
       <UniqueIdentifier>{c858f833-45d0-45d5-9ad4-4fc522f9dd14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Hack\Memory">
+      <UniqueIdentifier>{6d32d720-0484-402d-a8d9-806e7d0d2409}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -51,6 +54,9 @@
     <ClInclude Include="Signatures.h">
       <Filter>Hack\Signatures</Filter>
     </ClInclude>
+    <ClInclude Include="Memory.h">
+      <Filter>Hack\Memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -64,6 +70,9 @@
     </ClCompile>
     <ClCompile Include="Signatures.cpp">
       <Filter>Hack\Signatures</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>Hack\Memory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -156,6 +156,7 @@
     <ClInclude Include="detours.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="functions.h" />
+    <ClInclude Include="Memory.h" />
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Signatures.h" />
@@ -165,6 +166,7 @@
     <ClCompile Include="Anticheat.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="functions.cpp" />
+    <ClCompile Include="Memory.cpp" />
     <ClCompile Include="Signatures.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

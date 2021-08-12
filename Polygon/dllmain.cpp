@@ -4,6 +4,7 @@
 #include "Anticheat.h"
 #include "Weapon.h"
 #include "Signatures.h"
+#include "Memory.h"
 
 //detours
 #include "detours.h"
@@ -14,10 +15,10 @@
 #endif
 //
 
-#define UNLIMITED_AMMO_KEY_PRESSED if (GetAsyncKeyState(VK_F1) & 1)
-#define NO_RECOIL_KEY_PRESSED if (GetAsyncKeyState(VK_F2) & 1)
-#define RAPID_FIRE_KEY_PRESSED if (GetAsyncKeyState(VK_F3) & 1)
-#define UNLIMITED_STAMINA_KEY_PRESSED if (GetAsyncKeyState(VK_F4) & 1)
+#define UNLIMITED_AMMO_KEY_PRESSED GetAsyncKeyState(VK_F1) & 1
+#define NO_RECOIL_KEY_PRESSED GetAsyncKeyState(VK_F2) & 1
+#define RAPID_FIRE_KEY_PRESSED GetAsyncKeyState(VK_F3) & 1
+#define UNLIMITED_STAMINA_KEY_PRESSED GetAsyncKeyState(VK_F4) & 1
 
 //ANTICHEAT
 uintptr_t addressSHValue     = 0;
@@ -32,6 +33,9 @@ Anticheat* anticheat                         = nullptr;
 Signatures* signatures                       = nullptr;
 AItem_Weapon_General* aItem_Weapon_General   = nullptr;
 UHealthStatsComponent* uHealthStatsComponent = nullptr;
+
+NopInternal* UnlimitedStaminaWhenRun  = nullptr;
+NopInternal* UnlimitedStaminaWhenJump = nullptr;
 
 bool bRecoil;
 bool unlimitedAmmo;
@@ -64,9 +68,8 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     if (!signatures->checkIfIsValid())
         return NULL;
 
-    std::vector<uintptr_t> anticheatOffsets{ Offsets[Anticheat::CreateProcessW], Offsets[Anticheat::GetProcessId], 
-        Offsets[Anticheat::FindWindowA] };
-    anticheat = new Anticheat(anticheatOffsets);
+    anticheat = new Anticheat({ Offsets[Anticheat::CreateProcessW], Offsets[Anticheat::GetProcessId],
+        Offsets[Anticheat::FindWindowA] });
 
     anticheat->DisableScue4x64();
     anticheat->DisableCEDetection();
@@ -81,27 +84,30 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     DetourAttach(&(LPVOID&)GetUHealthStatsComponentObj, (PBYTE)HookGetUHealthStatsComponentObj);
     DetourTransactionCommit();
 
+    UnlimitedStaminaWhenRun = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8);
+    UnlimitedStaminaWhenJump = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8);
+
 	while (true) 
 	{
         aItem_Weapon_General = (AItem_Weapon_General*)(addressAItem_Weapon_General);
         uHealthStatsComponent = (UHealthStatsComponent*)(addressUHealthStatsComponent);
 
-        UNLIMITED_AMMO_KEY_PRESSED
+        if(UNLIMITED_AMMO_KEY_PRESSED)
         {
             if (aItem_Weapon_General)
                 unlimitedAmmo = !unlimitedAmmo;
         }
 
-        NO_RECOIL_KEY_PRESSED
+        if(NO_RECOIL_KEY_PRESSED)
         {
             if(aItem_Weapon_General)
                 bRecoil = !bRecoil;
         }
 
-        RAPID_FIRE_KEY_PRESSED
+        if(RAPID_FIRE_KEY_PRESSED)
             bRapidFire = !bRapidFire;
 
-        UNLIMITED_STAMINA_KEY_PRESSED
+        if(UNLIMITED_STAMINA_KEY_PRESSED)
         {
             if (uHealthStatsComponent)
                 unlimitedStamina = !unlimitedStamina;
@@ -110,9 +116,14 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
             {
                 if (uHealthStatsComponent)
                 {
-                    anticheat->Nop((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8); 
-                    anticheat->Nop((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8); 
+                    UnlimitedStaminaWhenRun->enable();
+                    UnlimitedStaminaWhenJump->enable();
                 }
+            }
+            else
+            {
+                UnlimitedStaminaWhenRun->disable();
+                UnlimitedStaminaWhenJump->disable();
             }
         }
 
@@ -149,6 +160,10 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
 
     delete anticheat;
     delete signatures;
+    delete aItem_Weapon_General;
+    delete uHealthStatsComponent;
+    delete UnlimitedStaminaWhenRun;
+    delete UnlimitedStaminaWhenJump;
 
 	return 0;
 }
