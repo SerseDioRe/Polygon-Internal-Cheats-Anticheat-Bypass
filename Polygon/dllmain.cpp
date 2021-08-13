@@ -2,7 +2,7 @@
 #include "pch.h"
 #include "functions.h"
 #include "Anticheat.h"
-#include "Weapon.h"
+#include "Polygon.h"
 #include "Signatures.h"
 #include "Memory.h"
 
@@ -28,11 +28,13 @@ uintptr_t addressFindWindowA = 0;
 uintptr_t addressGetAItem_Weapon_General = 0;
 uintptr_t addressAItem_Weapon_General    = 0;
 uintptr_t addressUHealthStatsComponent   = 0;
+uintptr_t addressACharacter              = 0;
 
 Anticheat* anticheat                         = nullptr;
 Signatures* signatures                       = nullptr;
 AItem_Weapon_General* aItem_Weapon_General   = nullptr;
 UHealthStatsComponent* uHealthStatsComponent = nullptr;
+GWorld* gWorld = nullptr;
 
 NopInternal* UnlimitedStaminaWhenRun  = nullptr;
 NopInternal* UnlimitedStaminaWhenJump = nullptr;
@@ -60,8 +62,21 @@ void __fastcall HookGetUHealthStatsComponentObj(uintptr_t UHealthStatsComponentO
     GetUHealthStatsComponentObj(UHealthStatsComponentObj);
 }
 
+typedef void(__fastcall* tGetACharacter)(uintptr_t aCharacter);
+tGetACharacter GetACharacter = nullptr;
+
+void __fastcall HookGetACharacter(uintptr_t aCharacter)
+{
+    addressACharacter = aCharacter;
+    GetACharacter(aCharacter);
+}
+
 DWORD WINAPI PolygonHack(HMODULE hModule)
 {
+    AllocConsole();
+    FILE* f;
+    freopen_s(&f, "CONOUT$", "w", stdout);
+
     signatures = new Signatures("POLYGON-Win64-Shipping.exe");
 
     std::vector<uintptr_t> Offsets{ signatures->GetOffsets() };
@@ -77,11 +92,13 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     //STARTING HACK...
     GetAItem_Weapon_GeneralObj  = (tGetAItem_Weapon_General)(Offsets[Signatures::AItem_Weapon_General]);
     GetUHealthStatsComponentObj = (tGetUHealthStatsComponentObj)(Offsets[Signatures::UHealthStatsComponent]);
+    GetACharacter = (tGetACharacter)((uintptr_t)GetModuleHandle(NULL) + 0x147FC60);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(LPVOID&)GetAItem_Weapon_GeneralObj, (PBYTE)HookGetAItem_Weapon_GeneralObj);
     DetourAttach(&(LPVOID&)GetUHealthStatsComponentObj, (PBYTE)HookGetUHealthStatsComponentObj);
+    DetourAttach(&(LPVOID&)GetACharacter, (PBYTE)HookGetACharacter);
     DetourTransactionCommit();
 
     UnlimitedStaminaWhenRun = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8);
@@ -89,8 +106,11 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
 
 	while (true) 
 	{
+        gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x58876F0);
         aItem_Weapon_General = (AItem_Weapon_General*)(addressAItem_Weapon_General);
         uHealthStatsComponent = (UHealthStatsComponent*)(addressUHealthStatsComponent);
+
+        std::cout << std::hex << std::uppercase << "0x" << addressACharacter << '\n';
 
         if(UNLIMITED_AMMO_KEY_PRESSED)
         {
@@ -164,6 +184,8 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     delete uHealthStatsComponent;
     delete UnlimitedStaminaWhenRun;
     delete UnlimitedStaminaWhenJump;
+    fclose(f);
+    FreeConsole();
 
 	return 0;
 }

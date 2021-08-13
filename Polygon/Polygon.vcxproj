@@ -154,13 +154,14 @@
   <ItemGroup>
     <ClInclude Include="Anticheat.h" />
     <ClInclude Include="detours.h" />
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="functions.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Polygon.h" />
     <ClInclude Include="Signatures.h" />
-    <ClInclude Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Anticheat.cpp" />

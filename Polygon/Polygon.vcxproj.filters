@@ -28,6 +28,9 @@
     <Filter Include="Hack\Memory">
       <UniqueIdentifier>{6d32d720-0484-402d-a8d9-806e7d0d2409}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Hack\SDK">
+      <UniqueIdentifier>{3f0d325a-e9d0-4527-9191-d36a0c586136}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -45,9 +48,6 @@
     <ClInclude Include="ntapi.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
-    <ClInclude Include="Weapon.h">
-      <Filter>Hack</Filter>
-    </ClInclude>
     <ClInclude Include="Anticheat.h">
       <Filter>Hack\Anticheat</Filter>
     </ClInclude>
@@ -56,6 +56,12 @@
     </ClInclude>
     <ClInclude Include="Memory.h">
       <Filter>Hack\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Polygon.h">
+      <Filter>Hack\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Hack\SDK</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
