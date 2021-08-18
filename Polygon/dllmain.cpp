@@ -62,15 +62,6 @@ void __fastcall HookGetUHealthStatsComponentObj(uintptr_t UHealthStatsComponentO
     GetUHealthStatsComponentObj(UHealthStatsComponentObj);
 }
 
-typedef void(__fastcall* tGetACharacter)(uintptr_t aCharacter);
-tGetACharacter GetACharacter = nullptr;
-
-void __fastcall HookGetACharacter(uintptr_t aCharacter)
-{
-    addressACharacter = aCharacter;
-    GetACharacter(aCharacter);
-}
-
 DWORD WINAPI PolygonHack(HMODULE hModule)
 {
     AllocConsole();
@@ -92,13 +83,11 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     //STARTING HACK...
     GetAItem_Weapon_GeneralObj  = (tGetAItem_Weapon_General)(Offsets[Signatures::AItem_Weapon_General]);
     GetUHealthStatsComponentObj = (tGetUHealthStatsComponentObj)(Offsets[Signatures::UHealthStatsComponent]);
-    GetACharacter = (tGetACharacter)((uintptr_t)GetModuleHandle(NULL) + 0x147FC60);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(LPVOID&)GetAItem_Weapon_GeneralObj, (PBYTE)HookGetAItem_Weapon_GeneralObj);
     DetourAttach(&(LPVOID&)GetUHealthStatsComponentObj, (PBYTE)HookGetUHealthStatsComponentObj);
-    DetourAttach(&(LPVOID&)GetACharacter, (PBYTE)HookGetACharacter);
     DetourTransactionCommit();
 
     UnlimitedStaminaWhenRun = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8);
@@ -106,7 +95,7 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
 
 	while (true) 
 	{
-        gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x58876F0);
+        //gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x58876F0); // 48 8B 1D ? ? ? ? 48 85 DB 74 ? 41 B0 ?
         aItem_Weapon_General = (AItem_Weapon_General*)(addressAItem_Weapon_General);
         uHealthStatsComponent = (UHealthStatsComponent*)(addressUHealthStatsComponent);
 
