@@ -68,7 +68,7 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     FILE* f;
     freopen_s(&f, "CONOUT$", "w", stdout);
 
-    signatures = new Signatures("POLYGON-Win64-Shipping.exe");
+    /*signatures = new Signatures("POLYGON-Win64-Shipping.exe");
 
     std::vector<uintptr_t> Offsets{ signatures->GetOffsets() };
     if (!signatures->checkIfIsValid())
@@ -91,13 +91,13 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     DetourTransactionCommit();
 
     UnlimitedStaminaWhenRun = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8);
-    UnlimitedStaminaWhenJump = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8);
+    UnlimitedStaminaWhenJump = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8);*/
 
 	while (true) 
 	{
-        //gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x58876F0); // 48 8B 1D ? ? ? ? 48 85 DB 74 ? 41 B0 ?
-        aItem_Weapon_General = (AItem_Weapon_General*)(addressAItem_Weapon_General);
-        uHealthStatsComponent = (UHealthStatsComponent*)(addressUHealthStatsComponent);
+        gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x5A79370); // 48 8B 1D ? ? ? ? 48 85 DB 74 ? 41 B0 ?
+        aItem_Weapon_General = (AItem_Weapon_General*)(gWorld->GameWorld->OwningGameInstance->LocalPlayers->LocalPlayer->PlayerController->AcknowledgedPawn->WeaponComponent->CurrentWeapon);
+        uHealthStatsComponent = (UHealthStatsComponent*)(gWorld->GameWorld->OwningGameInstance->LocalPlayers->LocalPlayer->PlayerController->AcknowledgedPawn->HealthStatsComponent);
 
         std::cout << std::hex << std::uppercase << "0x" << addressACharacter << '\n';
 
