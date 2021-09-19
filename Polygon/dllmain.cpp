@@ -6,6 +6,9 @@
 #include "Signatures.h"
 #include "Memory.h"
 
+#include <TlHelp32.h>
+#include <Psapi.h>
+
 //detours
 #include "detours.h"
 #if defined _M_X64
@@ -19,6 +22,8 @@
 #define NO_RECOIL_KEY_PRESSED GetAsyncKeyState(VK_F2) & 1
 #define RAPID_FIRE_KEY_PRESSED GetAsyncKeyState(VK_F3) & 1
 #define UNLIMITED_STAMINA_KEY_PRESSED GetAsyncKeyState(VK_F4) & 1
+
+#define RVA(addr, size) ((uintptr_t)((UINT_PTR)(addr) + *(PINT)((UINT_PTR)(addr) + ((size) - sizeof(INT))) + (size)))
 
 //ANTICHEAT
 uintptr_t addressSHValue     = 0;
@@ -44,6 +49,45 @@ bool unlimitedAmmo;
 bool unlimitedStamina;
 bool bRapidFire;
 
+uintptr_t gWorldAddress = 0;
+uintptr_t gWorldOffset = 0;
+
+MODULEINFO GetModuleInfo(char* szModule)
+{
+    MODULEINFO modInfo = { 0 };
+    HMODULE hModule = GetModuleHandleA(szModule);
+    if (hModule != 0)
+        GetModuleInformation(GetCurrentProcess(), hModule, &modInfo, sizeof(MODULEINFO));
+    return modInfo;
+}
+
+uintptr_t FindPattern(char* module, char* pattern, char* mask)
+{
+    MODULEINFO mInfo = GetModuleInfo(module);
+    uintptr_t base = (uintptr_t)mInfo.lpBaseOfDll;
+    DWORD size = (DWORD)mInfo.SizeOfImage;
+    DWORD patternLength = (DWORD)strlen(mask);
+
+    for (DWORD i = 0; i < size - patternLength; i++)
+    {
+        bool found = true;
+        for (DWORD j = 0; j < patternLength; j++)
+        {
+            found &= mask[j] == '?' || pattern[j] == *(char*)(base + i + j);
+        }
+        if (found)
+            return base + i;
+    }
+    return NULL;
+}
+
+uintptr_t GetOffset(uintptr_t addr)
+{
+    uintptr_t address = 0x0;
+    address = (addr + *(uint32_t*)addr + 4) - (uintptr_t)GetModuleHandle(NULL);
+    return address;
+}
+
 typedef __int64(__fastcall* tGetAItem_Weapon_General)(uintptr_t AItem_Weapon_GeneralObj);
 tGetAItem_Weapon_General GetAItem_Weapon_GeneralObj = nullptr;
 
@@ -67,6 +111,10 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     AllocConsole();
     FILE* f;
     freopen_s(&f, "CONOUT$", "w", stdout);
+
+    gWorldAddress = sigscanporcodio("POLYGON-Win64-Shipping.exe", "48 8B 1D ?? ?? ?? ?? 48 85 DB 74 ?? 41 B0 ??");
+    //gWorldAddress = FindPattern((char*)"POLYGON-Win64-Shipping.exe", (char*)"\x48\x8b\x1d\x00\x00\x00\x00\x48\x85\xdb\x74\x00\x41\xb0", (char*)"xxx????xxxx?xx");
+    gWorldOffset = RVA(gWorldAddress, 7);//GetOffset(gWorldAddress);
 
     /*signatures = new Signatures("POLYGON-Win64-Shipping.exe");
 
@@ -93,7 +141,7 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
     UnlimitedStaminaWhenRun = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaOne]), 8);
     UnlimitedStaminaWhenJump = new NopInternal((BYTE*)(Offsets[Signatures::UnlimitedStaminaTwo]), 8);*/
 
-	while (true) 
+	/*while (true)
 	{
         gWorld = (GWorld*)((uintptr_t)GetModuleHandle(NULL) + 0x5A79370); // 48 8B 1D ? ? ? ? 48 85 DB 74 ? 41 B0 ?
         aItem_Weapon_General = (AItem_Weapon_General*)(gWorld->GameWorld->OwningGameInstance->LocalPlayers->LocalPlayer->PlayerController->AcknowledgedPawn->WeaponComponent->CurrentWeapon);
@@ -165,16 +213,17 @@ DWORD WINAPI PolygonHack(HMODULE hModule)
         }
 
 		Sleep(30);
-	}
+	}*/
 
-    delete anticheat;
-    delete signatures;
-    delete aItem_Weapon_General;
-    delete uHealthStatsComponent;
-    delete UnlimitedStaminaWhenRun;
-    delete UnlimitedStaminaWhenJump;
-    fclose(f);
-    FreeConsole();
+    //delete anticheat;
+    //delete signatures;
+    //delete aItem_Weapon_General;
+    //delete uHealthStatsComponent;
+    //delete UnlimitedStaminaWhenRun;
+    //delete UnlimitedStaminaWhenJump;
+    //fclose(f);
+    //FreeConsole();
+    FreeLibraryAndExitThread(hModule, 0);
 
 	return 0;
 }
